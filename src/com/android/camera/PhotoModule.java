@@ -88,6 +88,9 @@ public class PhotoModule
 
     private static final String TAG = "CAM_PhotoModule";
 
+    private boolean mRestartPreview = false;
+    private boolean mAspectRatioChanged = false;
+
     // We number the request code from 1000 to avoid collision with Gallery.
     private static final int REQUEST_CROP = 1000;
 
@@ -598,7 +601,14 @@ public class PhotoModule
 
     @Override
     public void startFaceDetection() {
-        if (mFaceDetectionStarted) return;
+
+        // Workaround for a buggy camera library
+        if (CameraUtil.noFaceDetectOnFrontCamera()
+                && (CameraHolder.instance().getCameraInfo()[mCameraId].facing == CameraInfo.CAMERA_FACING_FRONT)) {
+            return;
+        }
+
+        if (mFaceDetectionStarted || mCameraState != IDLE) return;
         if (mParameters.getMaxNumDetectedFaces() > 0) {
             mFaceDetectionStarted = true;
             CameraInfo info = CameraHolder.instance().getCameraInfo()[mCameraId];
@@ -707,8 +717,12 @@ public class PhotoModule
                     + mPictureDisplayedToJpegCallbackTime + "ms");
 
             mFocusManager.updateFocusUI(); // Ensure focus indicator is hidden.
-            if (!mIsImageCaptureIntent) {
+
+            if (!mIsImageCapture && !CameraUtil.enableZSL()) {
                 setupPreview();
+            } else {
+                mFocusManager.resetTouchFocus();
+                setCameraState(IDLE);
             }
 
             ExifInterface exif = Exif.getExif(jpegData);
@@ -903,6 +917,10 @@ public class PhotoModule
                 new ShutterCallback(!animateBefore),
                 mRawPictureCallback, mPostViewPictureCallback,
                 new JpegPictureCallback(loc));
+
+        if (CameraUtil.enableZSL()) {
+            mRestartPreview = false;
+        }
 
         mNamedImages.nameNewImage(mCaptureStartTime);
 
@@ -1488,7 +1506,7 @@ public class PhotoModule
 
         setDisplayOrientation();
 
-        if (!mSnapshotOnIdle) {
+        if (!mSnapshotOnIdle && !mAspectRatioChanged) {
             // If the focus mode is continuous autofocus, call cancelAutoFocus to
             // resume it because it may have been paused by autoFocus call.
             if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())) {
@@ -1591,9 +1609,18 @@ public class PhotoModule
         if (pictureSize == null) {
             CameraSettings.initialCameraPictureSize(mActivity, mParameters);
         } else {
+            Size oldSize = mParameters.getPictureSize();
             List<Size> supported = mParameters.getSupportedPictureSizes();
             CameraSettings.setCameraPictureSize(
                     pictureSize, supported, mParameters);
+            Size size = mParameters.getPictureSize();
+            if (oldSize != null && size != null) {
+                if(!size.equals(oldSize) && mCameraState != PREVIEW_STOPPED) {
+                    Log.d(TAG, "Picture size changed. Restart preview");
+                    mAspectRatioChanged = true;
+                    stopPreview();
+                }
+            }
         }
         Size size = mParameters.getPictureSize();
 
@@ -1657,6 +1684,13 @@ public class PhotoModule
             if (mSceneMode == null) {
                 mSceneMode = Parameters.SCENE_MODE_AUTO;
             }
+        }
+
+        if (CameraUtil.enableZSL()) {
+            // Switch on ZSL mode
+            mParameters.set("camera-mode", "1");
+        } else {
+            //mParameters.setCameraMode(0);
         }
 
         // Set JPEG quality.
@@ -1770,6 +1804,11 @@ public class PhotoModule
             mUpdateSet = 0;
             return;
         } else if (isCameraIdle()) {
+            if (mRestartPreview) {
+                Log.d(TAG, "Restarting preview");
+                startPreview();
+                mRestartPreview = false;
+            }
             setCameraParameters(mUpdateSet);
             updateSceneMode();
             mUpdateSet = 0;
@@ -1778,6 +1817,12 @@ public class PhotoModule
                 mHandler.sendEmptyMessageDelayed(
                         SET_CAMERA_PARAMETERS_WHEN_IDLE, 1000);
             }
+        }
+        if (mAspectRatioChanged) {
+            Log.e(TAG, "Aspect ratio changed, restarting preview");
+            startPreview();
+            mAspectRatioChanged = false;
+            mHandler.sendEmptyMessage(START_PREVIEW_DONE);
         }
     }
 
