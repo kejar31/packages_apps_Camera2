@@ -34,4 +34,6 @@
     <bool name="noFaceDetectOnFrontCamera">false</bool>
     <!-- Use ZSL mode for Qualcomm cameras -->
     <bool name="enableZSL">false</bool>
+    <!-- Magic for enabling ZSL on Samsung cameras -->
+    <bool name="sendMagicSamsungZSLCommand">false</bool>
 </resources>

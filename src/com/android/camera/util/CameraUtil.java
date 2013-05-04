@@ -171,6 +171,9 @@ public class CameraUtil {
     // Workaround for QC cameras with broken face detection on front camera
     private static boolean sNoFaceDetectOnFrontCamera;
 
+    // Send magic command to hardware for Samsung ZSL
+    private static boolean sSendMagicSamsungZSLCommand;
+
     private CameraUtil() {
     }
 
@@ -190,6 +193,8 @@ public class CameraUtil {
         sEnableZSL = context.getResources().getBoolean(R.bool.enableZSL);
         sNoFaceDetectOnFrontCamera = context.getResources().getBoolean(
                 R.bool.noFaceDetectOnFrontCamera);
+        sSendMagicSamsungZSLCommand = context.getResources().getBoolean(
+                R.bool.sendMagicSamsungZSLCommand);
     }
 
     public static int dpToPixel(int dp) {
@@ -214,6 +219,10 @@ public class CameraUtil {
 
     public static boolean noFaceDetectOnFrontCamera() {
         return sNoFaceDetectOnFrontCamera;
+    }
+
+    public static boolean sendMagicSamsungZSLCommand() {
+        return sSendMagicSamsungZSLCommand;
     }
 
     // Rotates the bitmap by the specified degree.

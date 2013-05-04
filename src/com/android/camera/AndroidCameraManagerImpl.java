@@ -83,6 +83,8 @@ class AndroidCameraManagerImpl implements CameraManager {
     // Presentation
     private static final int ENABLE_SHUTTER_SOUND =    501;
     private static final int SET_DISPLAY_ORIENTATION = 502;
+	
+	private static final int ENABLE_SAMSUNG_ZSL_MODE = 503;
 
     private CameraHandler mCameraHandler;
     private android.hardware.Camera mCamera;
@@ -312,6 +314,12 @@ class AndroidCameraManagerImpl implements CameraManager {
                     case ENABLE_SHUTTER_SOUND:
                         enableShutterSound((msg.arg1 == 1) ? true : false);
                         return;
+						
+					case ENABLE_SAMSUNG_ZSL_MODE:
+                        // I don't know the significance of 1508, it was discovered
+                        // by reading logs and reverse engineering.
+                        mCamera.sendRawCommand(1508, 0, 0);
+                        return;
 
                     case REFRESH_PARAMETERS:
                         mParametersIsDirty = true;
@@ -539,6 +547,13 @@ class AndroidCameraManagerImpl implements CameraManager {
         public void enableShutterSound(boolean enable) {
             mCameraHandler.obtainMessage(
                     ENABLE_SHUTTER_SOUND, (enable ? 1 : 0), 0).sendToTarget();
+        }
+		
+		@Override
+        public void sendMagicSamsungZSLCommand() {
+            mSig.close();
+            mCameraHandler.sendEmptyMessage(ENABLE_SAMSUNG_ZSL_MODE);
+            mSig.block();
         }
     }
 
