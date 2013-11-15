@@ -102,9 +102,10 @@ public class PhotoModule
     private static final int SWITCH_CAMERA = 6;
     private static final int SWITCH_CAMERA_START_ANIMATION = 7;
     private static final int CAMERA_OPEN_DONE = 8;
-    private static final int OPEN_CAMERA_FAIL = 9;
-    private static final int CAMERA_DISABLED = 10;
-    private static final int SWITCH_TO_GCAM_MODULE = 11;
+	private static final int START_PREVIEW_DONE = 9;
+    private static final int OPEN_CAMERA_FAIL = 10;
+    private static final int CAMERA_DISABLED = 11;
+    private static final int SWITCH_TO_GCAM_MODULE = 12;
 
     // The subset of parameters we need to update in setCameraParameters().
     private static final int UPDATE_PARAM_INITIALIZE = 1;
@@ -328,6 +329,13 @@ public class PhotoModule
 
                 case CAMERA_OPEN_DONE: {
                     onCameraOpened();
+                    break;
+                }
+
+                case START_PREVIEW_DONE: {
+                    setCameraState(IDLE);
+                    startFaceDetection();
+                    locationFirstRun();
                     break;
                 }
 
@@ -718,7 +726,7 @@ public class PhotoModule
 
             mFocusManager.updateFocusUI(); // Ensure focus indicator is hidden.
 
-            if (!mIsImageCapture && !CameraUtil.enableZSL()) {
+            if (!mIsImageCaptureIntent && !CameraUtil.enableZSL()) {
                 setupPreview();
             } else {
                 mFocusManager.resetTouchFocus();
