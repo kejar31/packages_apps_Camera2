@@ -162,7 +162,7 @@ public class CameraUtil {
     // HTC camcorder mode
     private static boolean sHTCCamMode;
 
-    private Util() {
+    private CameraUtil() {
     }
 
     public static void initialize(Context context) {

@@ -507,10 +507,10 @@ public class CameraSettings {
      * @param on
      */
     public static void setVideoMode(Parameters params, boolean on) {
-        if (Util.useSamsungCamMode()) {
+        if (CameraUtil.useSamsungCamMode()) {
             params.set("cam_mode", on ? "1" : "0");
         }
-        if (Util.useHTCCamMode()) {
+        if (CameraUtil.useHTCCamMode()) {
             params.set("cam-mode", on ? "1" : "0");
         }
     }
